@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:login_example/main.dart';
+
 
 class MyLoginPage extends StatefulWidget {
 
@@ -9,10 +14,15 @@ class _MyLoginPageState extends State<MyLoginPage> {
 
   TextStyle textStyle = TextStyle(fontFamily: 'Montserrat', fontSize: 20.0);
 
+  final usernameController = TextEditingController();
+
+  final passwordController = TextEditingController();
+
   @override
   Widget build(BuildContext buildContext) {
 
     final txtUsername = TextField(
+      controller: usernameController,
       obscureText: false,
       style: textStyle,
       keyboardType: TextInputType.text,
@@ -25,6 +35,7 @@ class _MyLoginPageState extends State<MyLoginPage> {
     );
 
     final txtPassword = TextField(
+      controller: passwordController,
       obscureText: true,
       style: textStyle,
       keyboardType: TextInputType.text,
@@ -42,7 +53,12 @@ class _MyLoginPageState extends State<MyLoginPage> {
       child: MaterialButton(
         minWidth: MediaQuery.of(buildContext).size.width,
         padding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
-        onPressed: () {},
+        onPressed: () {
+          setState(() {
+            
+          });
+          logIn(usernameController.text, passwordController.text);
+        },
         child: Text(
           'LOGIN',
           textAlign: TextAlign.center,
@@ -84,5 +100,36 @@ class _MyLoginPageState extends State<MyLoginPage> {
         ),
       ),
     );
+  }
+
+  logIn(String username, password) async {
+    print(username);
+    print(password);
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+
+    final _baseUrl = 'https://leumart-api.herokuapp.com';
+
+    Map<String, String> data = {
+      "username": username,
+      "password": password
+    };
+
+    Map<String, String> inputHeader = {
+      'Content-Type': 'application/json'
+    };
+
+    var url = _baseUrl + '/api/users/login';
+
+    http.post(url, body: json.encode(data), headers: inputHeader).then((http.Response response){
+      if (response.statusCode == 200) {
+        print(response.body);
+        var loginResponse = json.decode(response.body);
+        Map<String, dynamic> token = loginResponse['token'];
+        print('Token : ' + token['access_token']);
+        sharedPreferences.setString('accessToken', token['access_token']);
+        // Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (BuildContext context) => DashboardPage()), (Route<dynamic> route) => false);
+        Navigator.pushNamed(context, '/');
+      } 
+    });
   }
 }
